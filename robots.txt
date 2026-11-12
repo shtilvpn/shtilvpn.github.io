@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://shtilvpn.github.io/sitemap.xml

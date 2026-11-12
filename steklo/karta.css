@@ -1,0 +1,112 @@
+/* «Связь по регионам» (shtil.vip/karta): карта России стеклянной плитой над морем «туман», светофор регионов,
+   легенда с числами, список всех регионов и частые ошибки. Подключается после base.css, style.css и sayt.css
+   и ничего в них не меняет: свои классы kt-*, страница узнаётся по body[data-screen="svyaz"].
+   Цвета карты: светофор Apple. Серый «нет данных» в тёмной теме свой, чтобы не слепил. Швы между регионами
+   светлые на стекле и тёмные в тёмной теме: регионы читаются плитками. Шкала отступов и кеглей DESIGN.md §2. */
+
+:root {
+  --kt-green: #34C759; --kt-yellow: #FFCC00; --kt-red: #FF3B30; --kt-none: #D1D1D6;
+  --kt-seam: rgba(255, 255, 255, .9); --kt-plita: rgba(255, 255, 255, .74);
+  --kt-k: 2.6; /* метки мелких регионов крупнее: на телефоне точка радиусом 7 из 1280 была бы в 4 пикселя */
+}
+:root[data-theme="dark"] { --kt-none: #4A5062; --kt-seam: rgba(8, 12, 26, .85); --kt-plita: rgba(10, 14, 28, .72); }
+
+/* ── Карта ───────────────────────────────────────────────────────────── */
+.kt-karta { padding: 8px; }
+/* Читать: плиты плотнее обычного стекла (белый .74 вместо .46), иначе волны моря режут текст и швы карты */
+.kt .pane[data-glass], .kt-osh .pane[data-glass] { --glfill: var(--kt-plita); }
+.kt-risunok { margin: 0; }
+.kt-risunok svg { display: block; width: 100%; height: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.kt-risunok .r {
+  stroke: var(--kt-seam); stroke-width: 1px; stroke-linejoin: round; vector-effect: non-scaling-stroke; cursor: pointer;
+  transition: opacity .18s var(--out);
+}
+.kt-risunok .t {
+  stroke: var(--kt-seam); stroke-width: 1.5px; vector-effect: non-scaling-stroke; cursor: pointer;
+  transform-box: fill-box; transform-origin: center; transform: scale(var(--kt-k));
+}
+.kt-risunok .z-green { fill: var(--kt-green); }
+.kt-risunok .z-yellow { fill: var(--kt-yellow); }
+.kt-risunok .z-red { fill: var(--kt-red); }
+.kt-risunok .z-none { fill: var(--kt-none); }
+/* Выбранный регион выходит вперёд, остальные приглушены; название подписано внизу плиты */
+.kt-risunok svg[data-vybor] .r:not(.on) { opacity: .4; }
+.kt-risunok .r.on { stroke: var(--pane-ink); stroke-width: 2px; }
+@media (hover: hover) and (pointer: fine) { .kt-risunok svg:not([data-vybor]) .r:hover { opacity: .78; } }
+
+.kt-imya {
+  position: absolute; left: 16px; top: 16px; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px);
+  padding: 8px 16px 8px 12px; border-radius: 999px; background: var(--tb); color: var(--pane-ink);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7); backdrop-filter: blur(10px) saturate(1.7);
+  font: 600 15px/1.3 var(--sys); letter-spacing: -.01em; animation: kt-vhod .22s var(--out) both;
+}
+@keyframes kt-vhod { from { opacity: 0; transform: translateY(8px); } }
+
+/* ── Цвет в легенде, подписи группы и названии региона ───────────────── */
+.z-green { --c: var(--kt-green); }
+.z-yellow { --c: var(--kt-yellow); }
+.z-red { --c: var(--kt-red); }
+.z-none { --c: var(--kt-none); }
+.kt-kv { flex: none; width: 16px; height: 16px; border-radius: 4px; background: var(--c, var(--kt-none)); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .14); }
+:root[data-theme="dark"] .kt-kv { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .22); }
+.kt-n { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Легенда с числами, свежесть, как читать ─────────────────────────── */
+.kt-svodka { padding: 16px 18px 18px; }
+.kt-legenda { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.kt-legenda li { display: flex; align-items: center; gap: 8px; min-height: 24px; font: 600 15px/1.3 var(--sys); letter-spacing: -.01em; color: var(--pane-ink); }
+.kt-svezhest { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--pane-ink) 12%, transparent); font: 600 13px/1.4 var(--sys); color: var(--pane-ink2); }
+.kt-kak { margin: 8px 0 0; font: 400 15px/1.55 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+
+/* ── Все регионы: четыре группы, названия колонками по алфавиту ─────── */
+.kt-gruppy { display: flex; flex-direction: column; gap: 20px; padding: 4px 0 20px; }
+.kt-gruppa:has(.kt-imena:empty) { display: none; }
+.kt-gr { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font: 650 15px/1.3 var(--sys); letter-spacing: -.005em; color: var(--pane-ink); }
+/* ширина колонки, а не число колонок: на телефоне одна колонка, длинное название переносится целиком, на широком экране три */
+.kt-imena { list-style: none; margin: 0; padding: 0; columns: 190px; column-gap: 16px; font: 400 15px/1.35 var(--sys); color: var(--pane-ink); }
+.kt-imena li { break-inside: avoid; padding: 3px 0; }
+
+/* ── Частые ошибки ───────────────────────────────────────────────────── */
+.kt-osh { padding-top: 32px; scroll-margin-top: 80px; }
+.kt-golova { padding: 20px 0 12px; }
+.kt-h2 { font: 700 24px/1.2 var(--sysd); letter-spacing: -.02em; color: var(--pane-ink); text-wrap: balance; }
+.kt-pod { margin-top: 8px; font: 400 15px/1.55 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.kt-voprosy { padding: 0 18px; }
+.kt-vopros { border-top: 1px solid color-mix(in srgb, var(--pane-ink) 12%, transparent); }
+.kt-vopros > summary { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 0; font: 600 17px/1.3 var(--sys); letter-spacing: -.012em; }
+.kt-vopros > summary > span { flex: 1; min-width: 0; text-wrap: pretty; }
+.kt-vopros > summary > .i { flex: none; color: var(--pane-ink2); }
+.kt-vopros > p { max-width: 62ch; padding: 0 0 20px; font: 400 15px/1.55 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.kt-pomosch { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 18px; font: 600 17px/1.3 var(--sys); letter-spacing: -.012em; color: var(--pane-ink); transition: transform .3s var(--out); }
+.kt-pomosch > span { flex: 1; min-width: 0; text-wrap: pretty; }
+.kt-pomosch > .i { flex: none; color: var(--pane-ink2); }
+.kt-pomosch:active { transform: scale(.985); transition-duration: .08s; }
+
+@media (prefers-contrast: more) {
+  :root { --kt-seam: #fff; }
+  :root[data-theme="dark"] { --kt-seam: #000; }
+}
+
+/* ── Планшет и компьютер ─────────────────────────────────────────────── */
+@media (min-width: 900px) {
+  body[data-screen="svyaz"] .low { align-self: stretch; } /* у образца на компьютере .low стоит правой колонкой сетки */
+}
+@media (min-width: 640px) and (max-width: 1099px) {
+  body[data-screen="svyaz"] .page { display: flex; flex-direction: column; max-width: 720px; margin: 0 auto; }
+  body[data-screen="svyaz"] .page > .foot { align-self: center; }
+}
+@media (min-width: 1100px) {
+  :root { --kt-k: 1.7; }
+  body[data-screen="svyaz"] .page { display: flex; flex-direction: column; }
+  body[data-screen="svyaz"] .top { padding-top: 5vh; }
+  body[data-screen="svyaz"] .low { padding-top: 24px; }
+  body[data-screen="svyaz"] .page > .foot { align-self: flex-start; margin: 32px 0 24px; }
+  .kt { display: grid; grid-template-columns: minmax(0, 1fr) 380px; column-gap: 32px; row-gap: 12px; align-items: start; grid-template-rows: auto 1fr; }
+  .kt-karta { grid-column: 1; grid-row: 1 / span 2; padding: 12px; }
+  .kt-svodka { grid-column: 2; grid-row: 1; }
+  .kt-spisok { grid-column: 2; grid-row: 2; }
+  .kt-osh { max-width: calc(100% - 412px); padding-top: 40px; }
+}
+@media (min-width: 900px) and (max-width: 1099px) {
+  body[data-screen="svyaz"] .top { padding-top: 40px; }
+}

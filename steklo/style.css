@@ -1,0 +1,344 @@
+/* «Жидкое стекло»: язык iOS 26. Под страницей живое море из цветных волн с чёткими гребнями,
+   поверх него стекло, которое их преломляет: шапка, кнопки, карточки и главная цифра экрана.
+   Состояние подписки видно по морю, набор «Лагуна» (выбор владельца 28.09.2026): изумрудный штиль, пока ключ
+   работает; бирюзовое мелководье на пробном; отлив открывает песок в последние сутки; коралловый риф и волнение,
+   когда срок вышел; розовый закат над водой, когда кончился пробный; глубокая синь, когда ключа нет, и туман, когда
+   пробные уже брали; прилив, пока ждём «да»; волны застыли и выцвели, когда код устарел. Цвет волн и оттенок
+   главной кнопки берутся из состояния. Лилового нет: «фиолетовый режет глаз» (владелец 28.09.2026).
+   Одинаково везде: море и преломление рисует scene.js через WebGL (url-фильтр стекла есть только в Chrome).
+   Шрифт на Apple системный SF, как в эталоне; на Android и Windows свои файлы из fonts/: Inter крупного
+   начертания (оптический размер 32) зашит в файл, чтобы стеклянная цифра на холсте была той же формы. */
+
+@font-face { font-family: "Shtil Display"; font-weight: 600; font-display: swap; src: url(fonts/display-600-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2212; }
+@font-face { font-family: "Shtil Display"; font-weight: 600; font-display: swap; src: url(fonts/display-600-cyr.woff2) format("woff2"); unicode-range: U+0400-045F; }
+@font-face { font-family: "Shtil Display"; font-weight: 700; font-display: swap; src: url(fonts/display-700-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+2212; }
+@font-face { font-family: "Shtil Display"; font-weight: 700; font-display: swap; src: url(fonts/display-700-cyr.woff2) format("woff2"); unicode-range: U+0400-045F; }
+@font-face { font-family: "Shtil Text"; font-weight: 400 800; font-display: swap; src: url(fonts/text-latin.woff2) format("woff2"); unicode-range: U+0000-00FF, U+2000-206F, U+20AC, U+20BD, U+2212; }
+@font-face { font-family: "Shtil Text"; font-weight: 400 800; font-display: swap; src: url(fonts/text-cyr.woff2) format("woff2"); unicode-range: U+0400-045F; }
+@font-face { font-family: "Shtil Mono"; font-weight: 500; font-display: swap; src: url(fonts/mono-500-latin.woff2) format("woff2"); unicode-range: U+0000-00FF; }
+
+:root {
+  --sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Shtil Text", system-ui, sans-serif;
+  --sysd: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Shtil Display", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, "Shtil Mono", monospace;
+  --out: cubic-bezier(.16, 1, .3, 1);
+  --gel: cubic-bezier(.3, 1.5, .5, 1);
+  color-scheme: light;
+  --ink: #0B1220; --ink2: rgba(11, 18, 32, .78);
+  --pane: rgba(255, 255, 255, .46); --pane-ink: #0B1220; --pane-ink2: rgba(11, 18, 32, .78);
+  --clear: rgba(255, 255, 255, .3); --fill: rgba(255, 255, 255, .62); --fill-press: rgba(255, 255, 255, .8);
+  --foot: rgba(255, 255, 255, .5); --seg: color-mix(in srgb, var(--ink) 9%, transparent); --seg-on: var(--fill-press);
+  --rim-a: rgba(255, 255, 255, .95); --rim-b: rgba(255, 255, 255, .45);
+  --lift: 0 12px 32px -14px rgba(12, 22, 58, .42), 0 2px 6px -2px rgba(12, 22, 58, .16);
+  --body: .26; --edge: .88; --shade: .32;
+}
+/* Проверка вида Android и Windows на маке: #light-nosf убирает SF из цепочки (класс ставит scene.js) */
+:root.nosf {
+  --sys: "Shtil Text", sans-serif; --sysd: "Shtil Display", sans-serif; --mono: "Shtil Mono", monospace;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #F4F7FF; --ink2: rgba(236, 242, 255, .82);
+  --pane: rgba(14, 18, 34, .44); --pane-ink: #F4F7FF; --pane-ink2: rgba(236, 242, 255, .8);
+  --clear: rgba(6, 10, 24, .34); --fill: rgba(255, 255, 255, .14); --fill-press: rgba(255, 255, 255, .24);
+  --foot: var(--clear); --seg: rgba(0, 0, 0, .22); --seg-on: rgba(255, 255, 255, .16);
+  --rim-a: rgba(255, 255, 255, .62); --rim-b: rgba(255, 255, 255, .2);
+  --lift: 0 14px 36px -14px rgba(0, 0, 0, .7), 0 2px 6px -2px rgba(0, 0, 0, .4);
+  --body: .08; --edge: .3; --shade: .45;
+}
+
+/* ── Море по состояниям. --amp высота волны, --len длина, --spd скорость, --breathe прилив ── */
+body[data-mood="dawn"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #FFD6A8; --b2: #FEB98B; --b3: #EDA085; --b4: #52B2B1; --b5: #2A9E96; --b6: #00868C; --b7: #006E81;
+  --tint: #007695; --amp: 14; --len: 340; --spd: .22; --breathe: 0;
+}
+body[data-mood="tide"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #AAE6E9; --b2: #7BD3DD; --b3: #4EBCCF; --b4: #25A4BF; --b5: #008BAB; --b6: #007293; --b7: #005A7B;
+  --tint: #00749D; --amp: 11; --len: 300; --spd: .2; --breathe: 9;
+}
+body[data-mood="frozen"] {
+  --sky1: #FAF6F1; --sky2: #F1EADF;
+  --b1: #CFDCDD; --b2: #B5C6C8; --b3: #9BAFB2; --b4: #83989C; --b5: #6D8186; --b6: #596B70; --b7: #46555B;
+  --tint: #55717A; --amp: 12; --len: 280; --spd: 0; --breathe: 0;
+}
+body[data-mood="calm"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #99EBE5; --b2: #7BD8B9; --b3: #62C192; --b4: #49A97B; --b5: #329072; --b6: #04786E; --b7: #005D6D;
+  --tint: #007B53; --amp: 7; --len: 560; --spd: .14; --breathe: 0;
+}
+body[data-mood="breeze"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #A7EDEC; --b2: #80DED7; --b3: #60CBBF; --b4: #46B4AB; --b5: #309C9C; --b6: #1C858F; --b7: #0F6D82;
+  --tint: #007976; --amp: 9; --len: 460; --spd: .2; --breathe: 0;
+}
+body[data-mood="ebb"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #EFD79C; --b2: #E6BC6C; --b3: #D89F4C; --b4: #C58339; --b5: #298E89; --b6: #00767B; --b7: #005D6D;
+  --tint: #A15B00; --amp: 9; --len: 380; --spd: .16; --breathe: 6;
+}
+body[data-mood="storm"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #FFCCB6; --b2: #FFA99A; --b3: #FB817F; --b4: #E06870; --b5: #C15467; --b6: #1B757A; --b7: #005C71;
+  --tint: #C63740; --amp: 26; --len: 190; --spd: .7; --breathe: 0;
+}
+body[data-mood="sunset"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #FFD2C7; --b2: #FFB4B3; --b3: #EE9BA7; --b4: #5EB0AF; --b5: #4898A5; --b6: #2A819C; --b7: #1C6A8C;
+  --tint: #BB3F5C; --amp: 16; --len: 260; --spd: .38; --breathe: 0;
+}
+body[data-mood="night"] {
+  --sky1: #EEF9FF; --sky2: #DAEFFC;
+  --b1: #ADE3F5; --b2: #83CFEC; --b3: #5FB7DF; --b4: #449ECD; --b5: #3485B8; --b6: #2B6C9F; --b7: #255583;
+  --tint: #006EBE; --amp: 8; --len: 480; --spd: .1; --breathe: 0;
+}
+body[data-mood="fog"] {
+  --sky1: #FFF6E6; --sky2: #FDE8C7;
+  --b1: #DFD8CB; --b2: #B2C7CE; --b3: #97AFB9; --b4: #7E98A5; --b5: #668292; --b6: #506B7F; --b7: #3D556A;
+  --tint: #477088; --amp: 5; --len: 620; --spd: .05; --breathe: 0;
+}
+:root[data-theme="dark"] body[data-mood="dawn"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #3E2100; --b2: #5B2700; --b3: #703324; --b4: #00605C; --b5: #00544D; --b6: #004140; --b7: #003032;
+  --tint: #007999;
+}
+:root[data-theme="dark"] body[data-mood="tide"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #00383B; --b2: #004C53; --b3: #005F6D; --b4: #00697D; --b5: #005970; --b6: #00455D; --b7: #003147;
+  --tint: #0077A1;
+}
+:root[data-theme="dark"] body[data-mood="frozen"] {
+  --sky1: #070E0F; --sky2: #101C1F;
+  --b1: #273334; --b2: #364648; --b3: #45585B; --b4: #4E6166; --b5: #425358; --b6: #334146; --b7: #242F33;
+  --tint: #54737F;
+}
+:root[data-theme="dark"] body[data-mood="calm"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #003127; --b2: #00432E; --b3: #005636; --b4: #006246; --b5: #005545; --b6: #00423C; --b7: #003030;
+  --tint: #007E55;
+}
+:root[data-theme="dark"] body[data-mood="breeze"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #003937; --b2: #004D49; --b3: #00625A; --b4: #006C68; --b5: #005C5D; --b6: #00484D; --b7: #00333B;
+  --tint: #007C77;
+}
+:root[data-theme="dark"] body[data-mood="ebb"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #372500; --b2: #4F3100; --b3: #693B00; --b4: #006058; --b5: #005350; --b6: #004141; --b7: #003032;
+  --tint: #A75C00;
+}
+:root[data-theme="dark"] body[data-mood="storm"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #531700; --b2: #7F2021; --b3: #A03646; --b4: #AA485C; --b5: #01655C; --b6: #004745; --b7: #003032;
+  --tint: #C83846;
+}
+:root[data-theme="dark"] body[data-mood="sunset"] {
+  --sky1: #000F13; --sky2: #001E24;
+  --b1: #521612; --b2: #772938; --b3: #286D66; --b4: #2E7B77; --b5: #0A6364; --b6: #00474A; --b7: #002F34;
+  --tint: #BE425F;
+}
+:root[data-theme="dark"] body[data-mood="night"] {
+  --sky1: #000D1E; --sky2: #001A34;
+  --b1: #003647; --b2: #004963; --b3: #005B80; --b4: #006495; --b5: #0A5484; --b6: #10406C; --b7: #0F2D51;
+  --tint: #0871C1;
+}
+:root[data-theme="dark"] body[data-mood="fog"] {
+  --sky1: #050E10; --sky2: #0D1C20;
+  --b1: #353025; --b2: #33464B; --b3: #425860; --b4: #4C616B; --b5: #3D5360; --b6: #2D414F; --b7: #202E3B;
+  --tint: #497490;
+}
+
+html, body { min-height: 100%; }
+body {
+  background: linear-gradient(180deg, var(--sky1), var(--sky2)) fixed;
+  color: var(--ink);
+  font: 400 17px/1.47 var(--sys);
+  letter-spacing: -.012em;
+  overflow-x: hidden;
+}
+::selection { background: color-mix(in srgb, var(--tint) 30%, transparent); }
+
+/* Море стоит на месте во весь экран; стекло лежит холстом во всю страницу и едет вместе с ней */
+.sea { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.glass { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; }
+.wall { display: none; }
+
+/* ── Стекло. Преломление, размытие и насыщенность под стеклом рисует холст (scene.js),
+      здесь заливка, кромка с бликом, тень, отклик на нажатие. Шапка прилипает к верху при
+      прокрутке, поэтому у неё обычное размытие браузера: оно одинаково везде ── */
+.no-gl .gl, .bar.gl { -webkit-backdrop-filter: blur(10px) saturate(1.7) brightness(1.04); backdrop-filter: blur(10px) saturate(1.7) brightness(1.04); }
+.gl {
+  position: relative; isolation: isolate;
+  background: var(--glfill, var(--clear));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(255, 255, 255, .1), var(--lift);
+}
+.gl[data-glass="clear"] { --bf: blur(1.2px) saturate(1.7) brightness(1.04); --glfill: var(--clear); }
+.gl[data-glass="pane"] { --bf: blur(9px) saturate(1.9) brightness(1.02); --glfill: var(--pane); color: var(--pane-ink); }
+.gl[data-glass="tint"] { --bf: blur(2px) saturate(1.5); --glfill: color-mix(in srgb, var(--tint) 84%, transparent); color: #fff; }
+/* Кромка: свет сверху-слева ярче, снизу-справа отражённый */
+.gl::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none; z-index: 2;
+  background: linear-gradient(135deg, var(--rim-a), var(--rim-b) 22%, transparent 45%, transparent 60%, var(--rim-b) 85%, var(--rim-a));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.gl[data-glass="tint"]::after { opacity: .8; }
+
+/* ── Шапка: плавающая стеклянная капсула ─────────────────────────────── */
+.bar {
+  position: sticky; top: 10px; z-index: 5; display: flex; align-items: center; width: fit-content;
+  margin: 10px 0 0 14px; padding: 5px 16px 5px 6px; border-radius: 999px; min-height: 48px;
+}
+.brand { display: inline-flex; align-items: center; gap: 9px; min-height: 44px; min-width: 44px; color: var(--ink); }
+.brand .w { font: 700 19px/1 var(--sysd); letter-spacing: -.02em; }
+.brand .v { font: 600 11px/1 var(--sys); letter-spacing: .12em; color: var(--ink2); margin-left: -3px; }
+.drop {
+  width: 32px; height: 32px; border-radius: 50%; flex: none; position: relative;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .95) 0 12%, rgba(255, 255, 255, 0) 32%),
+    radial-gradient(circle at 60% 72%, color-mix(in srgb, var(--b3) 80%, #fff), var(--b5) 70%, var(--b7));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55), inset 0 -4px 8px rgba(0, 0, 0, .18), 0 4px 10px -4px rgba(0, 0, 0, .35);
+}
+body.s-1-vhod .bar { padding: 5px; }
+
+/* ── Страница ─────────────────────────────────────────────────────────── */
+.page { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: calc(100svh - 58px); padding: 0 16px; }
+.top { display: flex; flex-direction: column; align-items: flex-start; padding-top: 22px; }
+.low { display: flex; flex-direction: column; gap: 12px; padding-top: 18px; }
+
+.title { font: 700 34px/1.1 var(--sysd); letter-spacing: -.028em; text-wrap: balance; }
+.lead { margin-top: 10px; max-width: 34ch; color: var(--ink2); text-wrap: pretty; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  font: 600 14px/1.2 var(--sys); letter-spacing: -.005em; color: var(--ink); margin-bottom: 14px;
+}
+.pill .i { flex: none; }
+.pill.warn { margin: 12px 0 0; }
+.live { width: 9px; height: 9px; border-radius: 50%; background: var(--tint); box-shadow: 0 0 0 0 color-mix(in srgb, var(--tint) 60%, transparent); animation: ping 1.6s var(--out) infinite; }
+@keyframes ping { 70% { box-shadow: 0 0 0 9px transparent; } to { box-shadow: 0 0 0 0 transparent; } }
+
+/* ── Главный предмет экрана: стеклянная цифра или знак (рисует scene.js) ── */
+.hero { position: relative; display: flex; align-items: flex-end; margin-top: 6px; }
+.obj { position: relative; flex: none; margin: -26px; --body-c: var(--b5); --edge-c: var(--b7); }
+:root[data-theme="dark"] .obj { --body-c: #fff; --edge-c: #000; }
+.obj > * { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.o-num { font: 600 238px/1 var(--sysd); letter-spacing: -.05em; }
+.seven .o-num { font-size: 270px; }
+.o-word { font: 700 132px/1 var(--sysd); letter-spacing: -.055em; }
+.o-code { font: 600 68px/1 var(--sysd); letter-spacing: .04em; }
+.o-watch { --size: 196px; }
+.o-pause { --size: 176px; }
+.hero .unit { font: 600 30px/1 var(--sysd); letter-spacing: -.02em; color: var(--ink); padding: 0 0 14px 12px; }
+.hero.word { margin-top: 26px; }
+.hero.word .unit { font: 700 15px/1 var(--sys); letter-spacing: .16em; padding-bottom: 22px; color: var(--ink2); }
+.hero.code { flex-direction: column; align-items: flex-start; margin-top: 18px; }
+.hero.code .cap { font: 600 13px/1 var(--sys); letter-spacing: .1em; text-transform: uppercase; color: var(--ink2); margin: 0 0 6px 2px; }
+.hero.shape { align-self: center; margin-top: 18px; }
+.seven { align-self: center; }
+
+.status { gap: 7px; margin: 14px 0 0; font-weight: 500; }
+.status .lbl { color: var(--ink2); }
+.status b { font-weight: 650; display: inline-flex; align-items: center; gap: 6px; }
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: #30D158; box-shadow: 0 0 0 3px rgba(48, 209, 88, .28), 0 0 10px rgba(48, 209, 88, .8); }
+.status .sep { width: 1px; height: 16px; background: currentColor; opacity: .25; margin: 0 3px; }
+
+.note { align-self: flex-start; margin: 0; }
+.drain { width: 64px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 16%, transparent); overflow: hidden; margin-left: 4px; }
+.drain i { display: block; height: 100%; width: 100%; border-radius: inherit; background: var(--tint); transform-origin: left; animation: drain 600s linear both; }
+@keyframes drain { to { transform: scaleX(0); } }
+
+/* ── Кнопки-капсулы ───────────────────────────────────────────────────── */
+.btn {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 9px;
+  min-height: 56px; padding: 0 22px; border-radius: 999px; overflow: hidden;
+  font: 600 17px/1.2 var(--sys); letter-spacing: -.015em; text-align: center; color: inherit;
+  transition: transform .55s var(--gel), background-color .25s, box-shadow .3s var(--out);
+}
+.btn .i { flex: none; }
+/* Нажатие как в iOS 26: капсула чуть надувается и светлеет изнутри, свет идёт за пальцем */
+.btn::before {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: -1; opacity: 0;
+  background: radial-gradient(120px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .55), rgba(255, 255, 255, 0) 70%);
+  transition: opacity .35s var(--out);
+}
+.btn:hover::before { opacity: 0; }
+@media (hover: hover) and (pointer: fine) { .btn:hover::before { opacity: .45; } } /* на телефоне свечение после касания залипало */
+.btn:active { transform: scale(1.045); transition: transform .14s var(--out), background-color .1s; }
+.btn:active::before { opacity: 1; transition-duration: .08s; }
+.btn.tint { font-weight: 650; text-shadow: 0 1px 1px rgba(0, 0, 0, .12); }
+.btn.clear { color: var(--ink); }
+.btn.fill { background: var(--fill); color: var(--pane-ink); min-height: 50px; font-size: 16px; }
+.btn.fill:active { background: var(--fill-press); }
+.btn.solid { background: var(--tint); color: #fff; box-shadow: 0 10px 24px -12px var(--tint), inset 0 1px 0 rgba(255, 255, 255, .28); }
+.btn.sm { min-height: 46px; padding: 0 12px; font-size: 15px; flex: 1 1 0; gap: 7px; }
+.btn.done { background: rgba(48, 209, 88, .3); }
+
+/* ── Карточки ─────────────────────────────────────────────────────────── */
+.pane { border-radius: 28px; padding: 18px; }
+.cap { display: flex; align-items: center; gap: 7px; font: 600 13px/1 var(--sys); letter-spacing: .08em; text-transform: uppercase; color: var(--pane-ink2); }
+.keytxt { margin-top: 10px; font: 500 13px/1.55 var(--mono); letter-spacing: 0; word-break: break-all; color: var(--pane-ink); }
+.duo { display: flex; gap: 8px; margin-top: 14px; }
+.link { display: flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 6px; font: 600 15px/1.3 var(--sys); color: var(--pane-ink); }
+.link span { flex: 1; }
+.manual { padding: 4px 18px; }
+.manual summary { display: flex; align-items: center; justify-content: space-between; min-height: 52px; font: 600 16px/1.3 var(--sys); }
+.manual summary .i { transition: transform .45s var(--gel); }
+.manual[open] summary .i { transform: rotate(180deg); }
+.manual p { padding: 0 0 16px; font: 400 15px/1.55 var(--sys); color: var(--pane-ink2); }
+.sess { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.small { text-align: center; font: 500 14px/1.4 var(--sys); color: var(--pane-ink2); }
+.sheet { padding: 24px 20px 18px; border-radius: 34px; }
+.sheet .title { font-size: 32px; }
+.sheet .lead { color: var(--pane-ink2); }
+.sheet .btns { display: flex; flex-direction: column; gap: 10px; margin: 22px 0 14px; }
+
+.foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px; align-self: center;
+  margin: auto 0 0; padding: 4px 6px 4px 18px; border-radius: 999px;
+  font: 500 13px/1 var(--sys); color: var(--ink);
+}
+.foot.gl { --glfill: var(--foot); } /* над тёмной глубиной моря стекло подвала толще, иначе мелкий текст бледнеет */
+.page > .foot { margin-top: auto; margin-bottom: calc(14px + env(safe-area-inset-bottom)); }
+.foot > a { min-height: 44px; display: inline-flex; align-items: center; }
+.seg { display: inline-flex; padding: 3px; border-radius: 999px; background: var(--seg); }
+.seg > * { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; font-weight: 600; }
+.seg .on { background: var(--seg-on); box-shadow: 0 2px 6px -2px rgba(0, 0, 0, .25); }
+
+/* Появление: стекло «проявляется», как материал (размытие + масштаб + прозрачность вместе) */
+.rise { animation: rise .9s var(--out) both; animation-delay: calc(var(--i, 0) * 70ms + 80ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+.hero.rise { animation-name: rise-hero; animation-duration: 1.2s; }
+@keyframes rise-hero { from { transform: translateY(16px) scale(.94); } }
+
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--tint) 70%, #fff); outline-offset: 3px; border-radius: 14px; }
+
+@media (prefers-contrast: more) {
+  :root { --ink2: var(--ink); --pane-ink2: var(--pane-ink); }
+  .gl::after { opacity: 1; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .gl { background: var(--sky1) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .gl[data-glass="tint"] { background: var(--tint) !important; }
+}
+
+/* ── Компьютер: предмет слева крупно, стекло справа ────────────────────── */
+@media (min-width: 900px) {
+  .bar { margin: 18px 0 0 5vw; top: 18px; }
+  .page { display: grid; grid-template-columns: minmax(0, 1fr) 460px; grid-template-rows: 1fr auto; column-gap: 5vw; padding: 0 5vw; min-height: calc(100vh - 66px); }
+  .top { grid-column: 1; grid-row: 1; padding-top: 7vh; }
+  .low { grid-column: 2; grid-row: 1; align-self: start; padding-top: 7vh; }
+  .page > .foot { grid-column: 1 / -1; grid-row: 2; justify-self: start; margin: 24px 0 22px; }
+  .title { font-size: 56px; }
+  .lead { font-size: 19px; }
+  .o-num { font-size: 400px; }
+  .seven .o-num { font-size: 400px; }
+  .o-word { font-size: 250px; }
+  .o-code { font-size: 104px; }
+  .o-watch { --size: 300px; }
+  .o-pause { --size: 260px; }
+  .hero .unit { font-size: 44px; padding-bottom: 24px; }
+  .hero.shape, .seven { align-self: flex-start; }
+  body.s-1-vhod .low { align-self: center; padding-top: 0; }
+}

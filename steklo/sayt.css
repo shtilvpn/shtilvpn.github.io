@@ -1,0 +1,328 @@
+/* Сайт поверх канона: style.css и scene.js перенесены из образца (DESIGN.md §7), здесь только то, чего в
+   образце нет. Несколько экранов на одной странице (вход: выбор, почта, «Проверьте почту», код, «устарел»):
+   скрипт страницы показывает один, его настроение моря и имя экрана стоят на body. Поле почты и ошибки на
+   стекле; значения из навыков вида (записка docs/design/priemka/zapiski/2026-09-24-my-vhod.md). */
+
+:root { --err: #841812; } /* тот же оттенок темнее: #A52019 над бирюзой «Лагуны» под стеклом давал 4.28 : 1 (фон 0.55),
+   этот держит 5 : 1 до фона 0.48, с запасом на волны */
+:root[data-theme="dark"] { --err: #FF9A8F; }
+
+/* Мелкий текст на стекле не бледнее 4.5 : 1 (§7.7): белая подпись на цветном стекле при 84 % над светлым
+   приливом давала 4.07, плотнее заливка. Ссылки подвала шире 44 точек: «Terms» было 37 */
+.gl[data-glass="tint"] { --glfill: color-mix(in srgb, var(--tint) 94%, transparent); }
+.foot > a { min-width: 44px; justify-content: center; }
+
+/* Экран не рисует свою коробку: его верх и низ встают в раскладку страницы, как у образца */
+.scr { display: contents; }
+
+
+/* Ответ на письмо встаёт листом на место вопроса, фокус переходит на его заголовок: рамка там не нужна,
+   заголовок не нажимается */
+.title[tabindex="-1"]:focus { outline: none; }
+/* «VPN» у слова Shtil над светлой волной штиля в тёмной теме: полупрозрачный текст давал 3.52 : 1 */
+body[data-mood="calm"] .hero.word .unit { color: var(--ink); }
+
+/* Ответ на месте: «Не получилось», «Слишком много попыток». Пустая строка места не занимает */
+.say { margin-top: 12px; font: 600 14px/1.4 var(--sys); color: var(--err); text-wrap: pretty; }
+.say:empty { margin: 0; }
+
+/* Поле почты: скруглённый прямоугольник, а не капсула (поле, а не кнопка), заливка как у кнопки на карточке */
+.field { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+.field label { font: 600 13px/1 var(--sys); letter-spacing: .08em; text-transform: uppercase; color: var(--pane-ink2); }
+.field input {
+  width: 100%; min-height: 52px; margin: 0; padding: 0 16px; border: 0; border-radius: 16px;
+  background: var(--fill); color: var(--pane-ink); caret-color: var(--tint);
+  font: 400 17px/1.3 var(--sys); letter-spacing: -.012em;
+  box-shadow: inset 0 0 0 1px var(--rim-b);
+  -webkit-appearance: none; appearance: none;
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+.field input::placeholder { color: var(--pane-ink2); opacity: 1; }
+.field input:focus { background: var(--fill-press); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tint) 70%, transparent); }
+.field input:focus-visible { border-radius: 16px; outline-offset: 2px; }
+.field input[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--err); }
+.field input:-webkit-autofill { -webkit-box-shadow: inset 0 0 0 40px var(--fill-press); -webkit-text-fill-color: var(--pane-ink); }
+.err { font: 600 14px/1.4 var(--sys); color: var(--err); }
+
+/* Занятая кнопка («Готовим код…», «Входим…»): слово на месте сообщает, второй раз не нажать */
+.btn:disabled { cursor: progress; }
+.btn:disabled:active { transform: none; }
+
+/* Ссылка в дверь: значок той двери, куда ведёт (дверь ставит скрипт экрана) */
+#wait:not([data-door="tg"]) .i-tg, #wait[data-door="tg"] .i-wa { display: none; }
+/* Письмо ждём 15 минут, код 10 */
+#sent .drain i { animation-duration: 900s; }
+#sent-mail { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+
+/* Без видеокарты предмет не рисуется (как у образца), но код входа сведения, а не украшение: строкой
+   того же кегля, цифры одной ширины. Для чтения с экрана код остаётся у предмета */
+.no-gl .o-code { margin: 0; }
+.no-gl #wait-code {
+  position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: nowrap;
+  font: 600 68px/1 var(--sysd); letter-spacing: .04em; font-variant-numeric: tabular-nums; color: var(--ink);
+}
+
+@media (min-width: 900px) {
+  body[data-screen="choose"] .low, body[data-screen="mail"] .low,
+  body[data-screen="ask"] .low, body[data-screen="ok"] .low, body[data-screen="no"] .low,
+  body[data-screen="tg-ramka"] .low, body[data-screen="tg-kak"] .low { align-self: center; padding-top: 0; }
+  .no-gl #wait-code { font-size: 104px; }
+}
+
+/* Знак Google: четыре цвета только на белом (правила бренда Google), поэтому свой белый кружок размером со
+   значок соседних дверей; цвет на сплошной подложке, а не на стекле (навык apple-design, записка my-vhod) */
+.g-znak { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 2px rgba(10, 15, 42, .18); }
+
+/* ── Кабинет (спека veb-kabinet §13, P8; записка docs/design/priemka/zapiski/2026-09-25-my-kabinet.md) ──
+   Одна длинная страница: верх как у образца 4-kabinet-rabotaet, ниже стеклянные карточки. Раскрывашки
+   раскрываются на месте, кнопки внутри карточки заливкой (стекло на стекле не кладём, навык apple-design) */
+.say.ok { color: var(--pane-ink); }
+.low > .say { color: var(--err); padding: 0 6px; }
+.low > .say.ok { color: var(--ink); }
+
+.txt { font: 400 15px/1.55 var(--sys); color: var(--pane-ink2); text-wrap: pretty; overflow-wrap: anywhere; }
+.txt p + p { margin-top: 10px; }
+.txt b { font-weight: 650; color: var(--pane-ink); }
+.txt code { font: 500 13px/1.5 var(--mono); }
+.key .ask { margin-top: 10px; font: 400 15px/1.5 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.key .sub-h { margin-top: 12px; font: 650 17px/1.3 var(--sys); letter-spacing: -.012em; }
+.key .sub-h + .txt { margin-top: 6px; }
+.key .keytxt, .spare .keytxt { overflow-wrap: anywhere; }
+
+/* Четыре устройства плиткой два на два: кнопка одна строкой, значок слева */
+.quad { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.quad .btn { min-height: 52px; padding: 0 10px; gap: 6px; font-size: 14px; justify-content: flex-start; }
+.acts { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.acts .btn { justify-content: flex-start; }
+.out { margin-top: 12px; padding: 12px 14px; border-radius: 18px; background: var(--fill); color: var(--pane-ink2); }
+.out:empty { display: none; }
+
+/* Раскрывашка на стекле: строка-заголовок 52 точки, стрелка поворачивается пружиной */
+.sect { padding: 2px 18px; }
+.sect > summary { display: flex; align-items: center; gap: 12px; min-height: 56px; font: 600 17px/1.3 var(--sys); letter-spacing: -.012em; }
+.sect > summary > span { flex: 1; }
+.sect > summary > .i:first-child { color: var(--pane-ink2); }
+.chev { transition: transform .45s var(--gel); }
+details[open] > summary > .chev { transform: rotate(180deg); }
+.sect .body { display: flex; flex-direction: column; gap: 12px; padding: 2px 0 18px; }
+.sub > summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; font: 600 15px/1.3 var(--sys); }
+.sub > .txt { padding-bottom: 8px; }
+.key .sub { margin-top: 4px; }
+.spare { display: flex; flex-direction: column; gap: 6px; }
+.spare .duo { margin-top: 4px; }
+.btns { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.kod { display: flex; flex-direction: column; gap: 10px; }
+.kod .field { margin-top: 4px; }
+.kod .field input { font: 500 19px/1.3 var(--mono); letter-spacing: .08em; }
+.kod-da { display: flex; flex-direction: column; gap: 4px; }
+.field textarea {
+  width: 100%; min-height: 120px; margin: 0; padding: 14px 16px; border: 0; border-radius: 16px; resize: vertical;
+  background: var(--fill); color: var(--pane-ink); caret-color: var(--tint); font: 400 16px/1.45 var(--sys);
+  box-shadow: inset 0 0 0 1px var(--rim-b); -webkit-appearance: none; appearance: none;
+}
+.field textarea:focus { background: var(--fill-press); box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tint) 70%, transparent); }
+.sent { padding: 12px 14px; border-radius: 18px; background: var(--fill); }
+
+/* Мои устройства: строка на приложение, «Отвязать» справа */
+.devlist:empty { display: none; }
+.devrow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--rim-b); }
+.devname { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.devname b { font: 600 15px/1.3 var(--sys); overflow-wrap: anywhere; }
+.devname span { font: 400 13px/1.3 var(--sys); color: var(--pane-ink2); }
+.devrow .btn { flex: none; }
+
+/* QR на своём белом квадрате в обеих темах: сканер читает тёмное на светлом */
+.qrs { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; }
+.qr { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.qr svg { width: 220px; max-width: 100%; height: auto; border-radius: 16px; }
+.qr figcaption { font: 500 13px/1.3 var(--sys); color: var(--pane-ink2); }
+
+.sess .small { color: var(--pane-ink); } /* 4.46 : 1 над ночным морем бледным оттенком */
+.sess .small + .small { margin-top: -4px; }
+.del-da { display: flex; flex-direction: column; gap: 8px; }
+#confirm:not([data-door="tg"]) .i-tg, #confirm[data-door="tg"] .i-wa { display: none; }
+body[data-screen="bank"] .hero .unit, body[data-screen="home"] .hero.num .unit { color: var(--ink); }
+/* Цена главным предметом: три цифры, кегль меньше числа дней */
+.hero.price .o-num { font-size: 168px; }
+/* «Ждём банк» короткий: подвал ложится на глубину прилива, стекло подвала плотнее */
+:root:not([data-theme="dark"]) body[data-screen="bank"] .foot.gl { --glfill: rgba(255, 255, 255, .8); }
+
+@media (min-width: 900px) {
+  body[data-screen="home"] .top { position: sticky; top: 90px; align-self: start; }
+  .hero.price .o-num { font-size: 300px; }
+}
+
+/* ── Страницы сайта: главная, условия, политика, ключ на 2 часа, установка (записки
+   docs/design/priemka/zapiski/2026-09-25-sayt-*.md). Весь текст на стекле карточек, одна главная кнопка оттенком ── */
+/* Шапка из двух капсул по краям, как кнопки панели iOS 26: слева имя или «‹ Главная», справа «Мой кабинет» */
+.bars { position: sticky; top: 10px; z-index: 5; display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin: 10px 14px 0; pointer-events: none; }
+.bars > .bar { position: relative; top: auto; margin: 0; pointer-events: auto; }
+.bar.nazad { gap: 2px; padding: 5px 16px 5px 8px; font: 600 16px/1.2 var(--sys); letter-spacing: -.012em; color: var(--ink); }
+.bar.my { padding: 5px 18px; font: 600 15px/1.2 var(--sys); letter-spacing: -.01em; color: var(--ink); }
+.bar.yazyk { padding: 3px; min-height: 0; }
+.bar.nazad:active, .bar.my:active { transform: scale(1.04); transition: transform .14s var(--out); }
+.bar.nazad, .bar.my { transition: transform .55s var(--gel); }
+/* Знак Shtil: три волны жидкого стекла из znak.svg, того же файла, что во вкладке и на экране «Домой» iPhone. В шапке
+   знак в цвет состояния (владелец 28.09.2026 «и значок такой», выбран набор «Лагуна»): поверх картинки цвет моря и
+   главной кнопки наложением «цвет», свет и стекло волн остаются от картинки. Кромка тонкой плёнки из тех же цветов
+   поворачивается на наведение и нажатие: перелив отвечает на руку, своей петли нет. Переход, а не keyframes: палец
+   отпустил на полпути, кромка идёт назад с того же места */
+.drop { background: linear-gradient(160deg, var(--b2), var(--tint) 75%), url(znak.svg) center / 118%; background-blend-mode: color, normal; }
+.drop::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .7;
+  background: conic-gradient(from 200deg, var(--b1), var(--b3), var(--tint), var(--b2), var(--b5), var(--b1));
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 1px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 1px));
+  transition: transform .9s var(--out), opacity .3s var(--out);
+}
+@media (hover: hover) and (pointer: fine) { .brand:hover .drop::after { transform: rotate(150deg); opacity: .95; } }
+.brand:active .drop::after { transform: rotate(240deg); opacity: 1; transition-duration: .45s, .1s; }
+.bar.brand { transition: transform .55s var(--gel); }
+.bar.brand:active { transform: scale(1.04); transition: transform .14s var(--out); }
+@media (prefers-reduced-motion: reduce) { .brand:hover .drop::after, .brand:active .drop::after { transform: none; } }
+
+/* Строки списка на карточке: разделитель от начала текста, как в списках iOS; ссылка отвечает на касание */
+.rows { display: flex; flex-direction: column; margin-top: 8px; }
+.rw { position: relative; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 10px 0;
+  font: 500 16px/1.35 var(--sys); letter-spacing: -.01em; color: var(--pane-ink); }
+.rw + .rw::before { content: ""; position: absolute; top: 0; left: 30px; right: 0; height: 1px;
+  background: color-mix(in srgb, var(--pane-ink) 12%, transparent); }
+.rw > .i { flex: none; color: var(--pane-ink2); }
+.rw > span { flex: 1; min-width: 0; }
+.rw > .v { flex: none; font-weight: 650; }
+.rw > .go { color: var(--pane-ink2); }
+a.rw { transition: opacity .2s var(--out); }
+a.rw:active { opacity: .55; transition-duration: .06s; }
+.rw.top { align-items: flex-start; padding: 14px 0; }
+.rw.top > .i { margin-top: 2px; }
+.rw .tx { flex: 1; min-width: 0; }
+.rw .t { font-weight: 650; }
+.rw .d { margin-top: 3px; font: 400 15px/1.5 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.pane > .gn { margin-top: 8px; }
+.pane.stolb { display: flex; flex-direction: column; gap: 10px; }
+.chtenie .txt { font-size: 16px; line-height: 1.6; }
+.chtenie .txt p + p { margin-top: 12px; }
+.chtenie .gn { margin-top: 18px; font-size: 14px; }
+.sub-h { font: 650 17px/1.3 var(--sys); letter-spacing: -.012em; color: var(--pane-ink); }
+
+/* Ссылка в тексте: цель не ниже 44 точек, подчёркнута, чтобы её было видно без цвета */
+.ln { display: inline-flex; align-items: center; min-height: 44px; font-weight: 650; color: var(--pane-ink);
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+
+/* Шаги айфона: номер в кружке несёт порядок */
+.shagi { display: flex; flex-direction: column; gap: 16px; }
+.stp { display: flex; gap: 14px; align-items: flex-start; }
+.stp .num { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--fill); box-shadow: inset 0 0 0 1px var(--rim-b); font: 650 15px/1 var(--sys);
+  font-variant-numeric: tabular-nums; color: var(--pane-ink); }
+.stp > div { flex: 1; min-width: 0; }
+.stp .t { padding-top: 4px; font: 650 17px/1.3 var(--sys); letter-spacing: -.012em; }
+.stp .d { margin-top: 4px; font: 400 15px/1.5 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.stp .link { margin-top: 4px; }
+
+/* Ключ готов: плашка с прорисованной галочкой, одно авторское движение экрана */
+.kready, .kacts { display: flex; flex-direction: column; gap: 12px; }
+.kready .pill { margin: 0; align-self: flex-start; }
+.pill .draw path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: stroke .5s var(--out) .25s forwards; }
+@keyframes stroke { to { stroke-dashoffset: 0; } }
+/* Ключ скопирован: значок меняется на галочку на месте, кнопка зеленеет (.btn.done из образца) */
+.ico { display: inline-grid; place-items: center; flex: none; }
+.ico > svg { grid-area: 1 / 1; }
+.ico .alt, .done .ico .main { display: none; }
+.done .ico .alt { display: block; }
+/* Шаги и готовый ключ стоят в нижней половине, а скрипт прячет только верх: на «Два часа прошли» их нет */
+body[data-screen="key-over"] #key-steps, body[data-screen="key-over"] #key-ready { display: none; }
+
+/* Код для телевизора: цифры одной ширины, крупно, по центру */
+.kod-tv { margin: 4px 0; text-align: center; font: 600 34px/1.1 var(--mono); letter-spacing: .14em;
+  font-variant-numeric: tabular-nums; color: var(--pane-ink); }
+
+@media (min-width: 900px) {
+  .bars { margin: 18px 5vw 0; top: 18px; }
+}
+
+/* Мастер подключения (записки 2026-09-26-*-master): один этап на экране; строка шага главной, жирное «Шаг N из 3»
+   её началом (подпись над заголовком запрещена навыком вкуса); одна сплошная кнопка на шаг, «Готово, дальше»
+   заливкой, «Назад» тише всех; запасные пути раскрывашками уровнем глубже. Высоту карточки не анимируем. */
+.master { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; scroll-margin-top: 96px; }
+.pane.master { margin-top: 0; }
+.mshag, .mq { display: flex; flex-direction: column; gap: 12px; }
+.mshag .t { font: 400 17px/1.45 var(--sys); letter-spacing: -.01em; color: var(--pane-ink); text-wrap: pretty; }
+.mshag .t b { font-weight: 650; }
+.mshag .t:focus, .mq:focus { outline: none; }
+.mnav { display: flex; flex-direction: column; gap: 8px; }
+.mback { align-self: center; min-width: 44px; min-height: 44px; padding: 0 18px; border: 0; border-radius: 22px;
+  background: none; font: 500 15px/1 var(--sys); color: var(--pane-ink2); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: transform 160ms cubic-bezier(.23, 1, .32, 1), color 160ms ease; }
+.mback:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .mback:hover { color: var(--pane-ink); } }
+@media (prefers-reduced-motion: reduce) { .mback { transition: none; } }
+.master .say.ok { margin: 0; }
+
+/* ── Мини-приложение: кабинет вкладками (спека mini-prilozhenie №3–5; записка
+   docs/design/priemka/zapiski/2026-09-27-mini-prilozhenie-my-kabinet.md). Панель вкладок капсулой iOS 26 внизу,
+   обычным размытием браузера, как шапка: холст стекла под прилипшей панелью дрожит при прокрутке. Вкладка
+   меняется сразу (её жмут десятки раз), переезжает только подложка активной: 200 мс сильной кривой. ── */
+:root { --tb: rgba(255, 255, 255, .72); }
+:root[data-theme="dark"] { --tb: rgba(8, 12, 26, .66); }
+.vk-p { display: contents; }
+.page.vk { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
+.bar.tabbar {
+  position: fixed; top: auto; bottom: calc(10px + env(safe-area-inset-bottom)); left: 12px; right: 12px; z-index: 6;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: auto; max-width: 440px; min-height: 0;
+  margin: 0 auto; padding: 4px; --glfill: var(--tb);
+}
+.tb-on { position: absolute; left: 4px; top: 4px; bottom: 4px; width: calc((100% - 8px) / 5); border-radius: 999px;
+  background: var(--seg-on); box-shadow: 0 2px 8px -3px rgba(0, 0, 0, .25);
+  transform: translateX(calc(var(--n, 0) * 100%)); transition: transform .2s cubic-bezier(.23, 1, .32, 1); }
+.tb { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; min-width: 44px; min-height: 54px; padding: 4px 2px; border-radius: 999px;
+  font: 600 11px/1.1 var(--sys); letter-spacing: .005em; color: var(--ink2); text-align: center;
+  transition: transform .55s var(--gel), color .15s ease; }
+.tb > span { max-width: 100%; white-space: nowrap; }
+.tb[aria-current="page"] { color: var(--ink); font-weight: 680; }
+.tb[aria-current="page"] .i { color: var(--tint); }
+.tb:active { transform: scale(1.06); transition: transform .14s var(--out); }
+body:not([data-screen="home"]) .tabbar { display: none; }
+/* Сменили вкладку: стекло стоит сразу, «проявление» только при открытии страницы */
+.vk[data-sw] .rise { animation: none; }
+
+/* Главная-сводка: расход пробного полосой, заполняется один раз при открытии */
+.meter { height: 8px; margin-top: 14px; border-radius: 4px; overflow: hidden;
+  background: color-mix(in srgb, var(--pane-ink) 14%, transparent); }
+.meter i { display: block; height: 100%; border-radius: inherit; background: var(--tint);
+  transform: scaleX(0); transform-origin: left; transition: transform .6s var(--out); }
+.trafik .txt { margin-top: 10px; font-variant-numeric: tabular-nums; color: var(--pane-ink); }
+a.vk-drug { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 0 18px;
+  font: 600 17px/1.3 var(--sys); letter-spacing: -.012em; }
+a.vk-drug > span { flex: 1; }
+a.vk-drug > .i:first-child { color: var(--pane-ink2); }
+a.vk-drug:active { transform: scale(.985); }
+a.vk-drug { transition: transform .3s var(--out); }
+.vk .pane > .cap + .rows, .vk .pane > .cap + .pusto { margin-top: 10px; }
+.vk .rw .seg { flex: none; }
+
+/* Друзья и Поддержка во вкладке открыты сразу: заголовок раскрывашки несёт заголовок экрана */
+#vk-druzya .sect > summary, #vk-podderzhka #r-podderzhka > summary { display: none; }
+#vk-druzya .sect .body, #vk-podderzhka #r-podderzhka .body { padding-top: 18px; }
+/* Ответ под кнопкой во вкладках лежит на стекле: прямо на глубокой волне светлой темы мелкий текст не читается */
+.vk .low > .say:not(:empty) { padding: 10px 14px; border-radius: 16px; background: var(--tb); color: var(--pane-ink);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7); backdrop-filter: blur(10px) saturate(1.7); }
+/* Вход из Telegram: плашка «Открываем Shtil» по своей ширине */
+#tgv .low > .pill { align-self: flex-start; }
+
+/* Простой путь новичка (записка 2026-10-04-put-novichka-sayt-put): этап пути встаёт в раскладку страницы, как экран
+   (.scr); две кнопки приложений одного веса в карточке выбора; «Назад», «Нет» и «Сделано» тихими строками в ряд,
+   как «Назад» мастера: запасные не спорят с одной главной кнопкой шага */
+.put, .put-e { display: contents; }
+.put-vybor { display: flex; flex-direction: column; gap: 10px; }
+.put-vybor > .txt { margin-top: 2px; }
+.put-niz { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+/* Пояснение шага стоит на море без подложки: основной цвет текста (бледный третьей строкой заходил на край волны,
+   4,4 при нужных 4,5). Тихие кнопки внизу шага ложатся на тёмную часть моря, где не держит ни тёмный, ни бледный
+   текст: своя лёгкая подложка стекла, как у карточек; тихими их держат кегль и вес */
+.put-e .lead { color: var(--ink); }
+.put-niz .mback { color: var(--pane-ink); background: var(--pane);
+  -webkit-backdrop-filter: blur(10px) saturate(1.7); backdrop-filter: blur(10px) saturate(1.7); }

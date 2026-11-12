@@ -1,0 +1,22 @@
+/* Справка shtil.vip/guides (спека prodvizhenie-v-poiske, часть 2): режим «Читать» поверх .pane.chtenie из sayt.css.
+   Свой файл, чтобы правка справки не трогала остальные экраны сайта. Значения из шкалы DESIGN.md §2 и ролей §7.6. */
+.spravka .txt h2 { font: 700 20px/1.3 var(--sysd); letter-spacing: -.012em; color: var(--pane-ink); margin: 28px 0 8px; text-wrap: balance; }
+.spravka .txt h2:first-child { margin-top: 0; }
+.spravka .txt ol, .spravka .txt ul { margin: 8px 0 0; padding-left: 1.25em; }
+.spravka .txt li { padding-left: 4px; }
+.spravka .txt li + li { margin-top: 8px; }
+.spravka .txt li::marker { color: var(--pane-ink); font-weight: 600; }
+.spravka .txt h2 + p, .spravka .txt p + ol, .spravka .txt p + ul { margin-top: 8px; }
+.spravka .txt ol + p, .spravka .txt ul + p { margin-top: 12px; }
+.spravka .txt code { padding: 1px 6px; border-radius: 8px; background: color-mix(in srgb, var(--pane-ink) 9%, transparent); color: var(--pane-ink); overflow-wrap: anywhere; }
+.spravka .gn { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; }
+.spravka a.vsya { display: inline-flex; align-items: center; min-height: 44px; font: 600 15px/1.2 var(--sys); color: var(--pane-ink); text-decoration: underline; text-underline-offset: 3px; }
+.spravka a.st { display: flex; flex-direction: column; justify-content: center; min-height: 44px; padding: 12px 0; color: inherit; text-decoration: none; border-top: 1px solid color-mix(in srgb, var(--pane-ink) 12%, transparent); -webkit-tap-highlight-color: transparent; }
+.spravka a.st:first-child { border-top: 0; padding-top: 0; }
+.spravka a.st:last-child { padding-bottom: 0; }
+.spravka a.st .t { font: 600 16px/1.35 var(--sys); color: var(--pane-ink); text-wrap: balance; transition: opacity .15s cubic-bezier(.4, 0, .2, 1); }
+.spravka a.st .d { margin-top: 3px; font: 400 14px/1.45 var(--sys); color: var(--pane-ink2); text-wrap: pretty; }
+.spravka a.st:active .t, .spravka a.vsya:active { opacity: .6; }
+.spravka a.st:focus-visible, .spravka a.vsya:focus-visible { outline: none; box-shadow: var(--shadow-focus, 0 0 0 3px color-mix(in srgb, var(--tint) 45%, transparent)); border-radius: 12px; }
+@media (hover: hover) and (pointer: fine) { .spravka a.st:hover .t { text-decoration: underline; text-underline-offset: 3px; } }
+@media (prefers-reduced-motion: reduce) { .spravka a.st .t { transition: none; } }

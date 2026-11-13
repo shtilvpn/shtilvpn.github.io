@@ -1,0 +1,21 @@
+/* Сайт статей shtilvpn.github.io (стандарт статьи 13.11.2026): только блоки, которых нет у справки shtil.vip/guides.
+   Свой файл, чтобы справка и принятые экраны shtil.vip не сдвинулись. Цвета и шрифты: переменные каркаса стекла. */
+.spravka .upd { margin-top: 8px; font: 500 14px/1.4 var(--sys); color: var(--ink2); font-variant-numeric: tabular-nums; }
+.spravka .txt h3 { font: 600 17px/1.35 var(--sys); letter-spacing: -.008em; color: var(--pane-ink); margin: 20px 0 0; text-wrap: balance; }
+.spravka .txt h2 + h3 { margin-top: 12px; }
+.spravka .txt h3 + p { margin-top: 4px; }
+.spravka .tabl { margin: 14px 0 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+.spravka .tabl table { width: 100%; border-collapse: collapse; font: 400 15px/1.45 var(--sys); color: var(--pane-ink2); overflow-wrap: normal; word-break: normal; hyphens: auto; }
+.spravka .tabl th { text-align: left; vertical-align: bottom; font-weight: 600; color: var(--pane-ink); padding: 0 14px 8px 0; }
+.spravka .tabl td { vertical-align: top; padding: 10px 14px 10px 0; border-top: 1px solid color-mix(in srgb, var(--pane-ink) 12%, transparent); }
+.spravka .tabl th:last-child, .spravka .tabl td:last-child { padding-right: 0; }
+.spravka .tabl td:first-child { color: var(--pane-ink); font-weight: 500; }
+.spravka .tabl + p, .spravka .tabl + h2 { margin-top: 14px; }
+.spravka .teme { margin-top: 24px; padding-top: 18px; border-top: 1px solid color-mix(in srgb, var(--pane-ink) 12%, transparent); }
+.spravka .teme h2 { margin: 0 0 4px; }
+.spravka .teme h2 + a.st { border-top: 0; }
+.spravka .teme a.st:last-child { padding-bottom: 0; }
+/* Ссылки внутри текста: зона нажатия 44 по высоте (цели HIG), строка не сдвигается: у строчного элемента внутренний
+   отступ по вертикали растит только область нажатия, не высоту строки. */
+.spravka .txt p a, .spravka .txt li a, .spravka .tabl td a { padding-block: 14px; color: var(--pane-ink); font-weight: 500; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; -webkit-tap-highlight-color: transparent; }
+.spravka .txt p a:active, .spravka .txt li a:active, .spravka .tabl td a:active { opacity: .6; }
